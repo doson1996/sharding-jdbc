@@ -1,0 +1,61 @@
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  application:
+    name: sharding-jdbc
+  shardingsphere:
+    props:
+      sql:
+        show: true
+    datasource:
+      names: ds0,ds1
+      ds0:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3306/ds1?useUnicode=true&characterEncoding=utf-8&serverTimezone=Hongkong&useSSL=false
+        username: root
+        password: '123456'
+        hikari:
+          minimum-idle: 5
+          idle-timeout: 600000
+          maximum-pool-size: 10
+          auto-commit: true
+          pool-name: MyHikariCP
+          max-lifetime: 1800000
+          connection-timeout: 30000
+          connection-test-query: SELECT 1
+      ds1:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3306/ds2?useUnicode=true&characterEncoding=utf-8&serverTimezone=Hongkong&useSSL=false
+        username: root
+        password: '123456'
+        hikari:
+          minimum-idle: 5
+          idle-timeout: 600000
+          maximum-pool-size: 10
+          auto-commit: true
+          pool-name: MyHikariCP
+          max-lifetime: 1800000
+          connection-timeout: 30000
+          connection-test-query: SELECT 1
+    sharding:
+      binding-tables: tb_order
+      default-database-strategy:
+        inline:
+          #根据id十位数 选择数据源 （数据库）
+          #.setScale( 0, BigDecimal.ROUND_DOWN ).remainder(BigDecimal.valueOf(2))  因为是BigDecimal
+          algorithm-expression: ds$->{(id / 10).setScale( 0, BigDecimal.ROUND_DOWN ).remainder(BigDecimal.valueOf(2))}
+          sharding-column: id
+      tables:
+        tb_order:
+          actual-data-nodes: ds$->{0..1}.tb_order_$->{0..1}
+          table-strategy:
+            inline:
+              #根据id个位数 选择表
+              algorithm-expression: tb_order_$->{ id % 2}
+              sharding-column: id
+
+mybatis:
+  type-aliases-package: com.ds.example.bean
+  mapper-locations: classpath:mapper/*.xml
